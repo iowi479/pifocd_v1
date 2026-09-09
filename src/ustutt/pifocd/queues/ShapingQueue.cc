@@ -11,7 +11,7 @@ void ShapingQueue::push(Packet *packet) {
     Entry sq_entry {};
     Entry pq_entry {};
 
-    uint64_t rt = this->stxn(packet);
+    uint64_t rt = this->shapingTransaction(packet, this->st->arrival_times, this->st->counters);
 
     // WARN: We assume here, that we are a Leaf. In PIFOCD it can't be different.
     // This simplifies the actions drastically here.

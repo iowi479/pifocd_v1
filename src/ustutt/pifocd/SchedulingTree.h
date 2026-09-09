@@ -30,8 +30,12 @@ protected:
     omnetpp::cMessage *wakeMsg = nullptr;
 
 public:
+    std::vector<uint64_t> arrival_times;
+    std::vector<int> counters;
+
+public:
     SchedulingTree()
-        : root(SchedulingQueue(txn, false))
+        : root(SchedulingQueue(pmp_schedulingTransaction, false))
         {
             this->root.setSchedulingTree(this);
 
@@ -39,7 +43,7 @@ public:
             leafs.reserve(leafsCount);
 
             for (int i = 0; i < leafsCount; i++) {
-                ShapingQueue q = ShapingQueue(stxn, true, (uint8_t) i);
+                ShapingQueue q = ShapingQueue(pmp_shapingTransaction, pmp_schedulingTransaction, true, (uint8_t) i);
                 q.setSchedulingTree(this);
 
                 root.addChild(&q);

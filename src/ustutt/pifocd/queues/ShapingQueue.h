@@ -12,19 +12,23 @@ using namespace inet;
 class ShapingQueue : public SchedulingQueue
 {
 public:
-    using ShapingTransaction = std::function<uint64_t(inet::Packet *)>;
+    using ShapingTransaction = std::function<uint64_t(
+        inet::Packet *,
+        std::vector<uint64_t>&,
+        std::vector<int>&
+    )>;
 
 
 protected:
     std::priority_queue<Entry, std::vector<Entry>, Compare> sq;
 
     uint8_t id;
-    ShapingTransaction stxn;
+    ShapingTransaction shapingTransaction;
 
 
 public:
-    ShapingQueue(ShapingTransaction stxn, bool isLeaf, uint8_t id)
-    : SchedulingQueue(stxn, isLeaf), id(id), stxn(stxn)
+    ShapingQueue(ShapingTransaction sptxn, SchedulingTransaction sdtxn, bool isLeaf, uint8_t id)
+    : SchedulingQueue(sdtxn, isLeaf), id(id), shapingTransaction(sptxn)
     {
         this->sq = {};
     }

@@ -1,64 +1,94 @@
+#include <regex>
+#include <stdexcept>
+#include "utils.h"
 #include "inet/common/packet/Packet.h"
 #include "inet/protocolelement/redundancy/StreamTag_m.h"
 
 using namespace inet;
 
+// INFO: Has to be updated with omnetpp.ini.
+static uint64_t periods[4] = {400000, 500000, 500000, 600000};
 
-int getPacketRank(Packet *packet) {
-    const char *streamId = nullptr;
+
+
+
+Flow getPacketFlow(Packet *packet)
+{
+    if (packet == nullptr) {
+        throw std::runtime_error("getPacketFlow(): packet is nullptr");
+    }
+
+    packet->getName();
+
     inet::Ptr<const StreamReq> streamReq = packet->findTag<inet::StreamReq>();
 
-    if (streamReq != nullptr) {
-        streamId = streamReq->getStreamName();
+    if (streamReq == nullptr) {
+        using namespace omnetpp;
+        EV_INFO << "Packet has no StreamReq tag: " << packet->getName() << endl;
+        // throw std::out_of_range("No StreamReq tag found!");
+        return Flow {0, 100};
     }
 
-    if (streamId == nullptr) {
-        // No Tag available
-        throw std::out_of_range("No SteamName found!");
+    const char *streamName = streamReq->getStreamName();
+
+    if (streamName == nullptr) {
+        throw std::out_of_range("No StreamName found!");
     }
 
-    size_t len = std::strlen(streamId);
-    if (len < 1) throw std::out_of_range("StreamName is not fitting: should be: (.*d)");
+    // Expected format: "Stream-(pcp)-(id)"
+    // Example: "Stream-(3)-(42)"
+    std::regex pattern(R"(Stream-\(([0-7])\)-\(([0-9]+)\))");
+    std::cmatch match;
 
-    char last = streamId[len - 1];
-    int pcp = last - '0';
+    if (!std::regex_match(streamName, match, pattern)) {
+        throw std::out_of_range(
+            "StreamName is not fitting: expected 'Stream-(pcp)-(id)'");
+    }
 
-    if (pcp < 0 || pcp > 7) throw std::out_of_range("pcp out of range");
+    int pcp = std::stoi(match[1].str());
+    int id  = std::stoi(match[2].str());
 
-    return pcp;
+    return Flow{pcp, id};
 }
+
 
 uint64_t simtime_to_nsec(inet::simtime_t t) {
-    uint64_t tns;
-
-    tns = (uint64_t) (SIMTIME_DBL(t)*1e9 + 0.5);
-
-    return tns;
+    return (uint64_t) (SIMTIME_DBL(t)*1e9 + 0.5);
 }
 
-uint64_t stxn(inet::Packet *packet) {
+uint64_t pmp_shapingTransaction(
+    inet::Packet *packet,
+    std::vector<uint64_t>& arrival_times,
+    std::vector<int>& counters)
+{
+    Flow f = getPacketFlow(packet);
+
     uint64_t now = simtime_to_nsec(simTime());
-    int rank = getPacketRank(packet);
 
-    static uint64_t a0[2] = {0, 0};
-    static int counter[2] = {0, 0};
+    // Resize both vectors if this flow ID is not yet present.
+    // New elements are initialized to 0.
+    if (f.id >= counters.size()) {
+        size_t newSize = f.id + 1;
 
-    // Stream 1: truncnormal(150us, 20us)
-    // Stream 2: truncnormal(200us, 20us)
-    static uint64_t period[2] = {150000, 200000};
-    static uint64_t wcd[2] = {80000,120000};
-
-    if (counter[rank] == 0) {
-        a0[rank] = now;
+        counters.resize(newSize, 0);
+        arrival_times.resize(newSize, 0);
     }
 
-    uint64_t rt = a0[rank] + (counter[rank] * period[rank]) + wcd[rank];
+    if (counters[f.id] == 0) {
+        arrival_times[f.id] = now;
+    }
 
-    counter[rank]++;
+    uint64_t rt = arrival_times[f.id]
+                + (counters[f.id] * periods[f.id]);
+
+    counters[f.id]++;
 
     return rt;
 }
 
-uint64_t txn(inet::Packet *packet) {
-    return getPacketRank(packet);
+
+uint64_t pmp_schedulingTransaction(inet::Packet *packet) {
+    struct Flow f = getPacketFlow(packet);
+
+    return f.pcp;
 }

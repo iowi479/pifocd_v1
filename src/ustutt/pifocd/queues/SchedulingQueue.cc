@@ -17,7 +17,7 @@ void SchedulingQueue::clear() {
 
 void SchedulingQueue::push(Packet *packet) {
     Entry entry {};
-    uint64_t rank = this->txn(packet);
+    uint64_t rank = this->schedulingTransaction(packet);
 
     // assert pcp range, since we might use this as a ref into the children.
     // This allows us to safely downcast to uint8_t later as well.
@@ -63,6 +63,7 @@ Packet *SchedulingQueue::pull() {
     } else {
         uint8_t ref = std::get<uint8_t>(head.value);
 
+        EV_INFO << "SchedulingQueue dequeued 1 ref with rank=" << ref << EV_ENDL;
         // ref always has to point into the children.
         // If this is out-of-bounds, something went wrong.
         if (this->children.size() < ref) throw cRuntimeError("SchedulingQueue ref is pointing out of bounds");
@@ -103,11 +104,6 @@ Packet *SchedulingQueue::peek() const {
 
         if (!this->children[ref]) throw cRuntimeError("SchedulingQueue ref is not there");
 
-
-        static thread_local int depth = 0;
-            if (++depth > 1000) {
-                throw cRuntimeError("peek recursion too deep (node may be cycling)");
-            }
         // throw cRuntimeError("test2 length children = %d", children.size());
         packet = this->st->peekLeaf(ref);
     }

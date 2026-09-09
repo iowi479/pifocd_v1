@@ -37,11 +37,11 @@ void SchedulingTree::pushPacket(Packet *packet, const cGate *gate) {
     // We keep ownership until we transmit the packet further.
     take(packet);
 
-    int pcp = getPacketRank(packet);
+    Flow f = getPacketFlow(packet);
 
-    EV_INFO << "Pushing packet (pcp=" << pcp << ") " << EV_FIELD(packet) << EV_ENDL;
+    EV_INFO << "Pushing packet (pcp=" << f.pcp << ") " << EV_FIELD(packet) << EV_ENDL;
 
-    this->leafs[pcp].push(packet);
+    this->leafs[f.pcp].push(packet);
 
     this->notifyCanPullPacketChanged();
 }

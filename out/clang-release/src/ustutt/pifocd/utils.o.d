@@ -1,8 +1,8 @@
-../out/clang-debug/src/ustutt/pifocd/utils.o: ustutt/pifocd/utils.cc \
-  ustutt/pifocd/utils.h ../../inet-4.6.0/src/inet/common/packet/Packet.h \
+../out/clang-release/src/ustutt/pifocd/utils.o: ustutt/pifocd/utils.cc \
+  ../../inet-4.6.0/src/inet/common/packet/Packet.h \
   ../../inet-4.6.0/src/inet/common/IPrintableObject.h \
   ../../inet-4.6.0/src/inet/common/INETDefs.h \
-  ../../inet-4.6.0/src/inet/common/precompiled_debug.h \
+  ../../inet-4.6.0/src/inet/common/precompiled_release.h \
   ../../inet-4.6.0/src/inet/common/precompiled.h \
   /home/simon/omnetpp-6.4.0/include/omnetpp.h \
   ../../inet-4.6.0/src/inet/opp_defines.h \
@@ -35,11 +35,10 @@
   ../../inet-4.6.0/src/inet/protocolelement/redundancy/StreamTag_m.h \
   ../../inet-4.6.0/src/inet/common/INETDefs_m.h \
   ../../inet-4.6.0/src/inet/common/TagBase_m.h
-ustutt/pifocd/utils.h:
 ../../inet-4.6.0/src/inet/common/packet/Packet.h:
 ../../inet-4.6.0/src/inet/common/IPrintableObject.h:
 ../../inet-4.6.0/src/inet/common/INETDefs.h:
-../../inet-4.6.0/src/inet/common/precompiled_debug.h:
+../../inet-4.6.0/src/inet/common/precompiled_release.h:
 ../../inet-4.6.0/src/inet/common/precompiled.h:
 /home/simon/omnetpp-6.4.0/include/omnetpp.h:
 ../../inet-4.6.0/src/inet/opp_defines.h:

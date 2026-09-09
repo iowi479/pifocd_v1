@@ -30,25 +30,40 @@ network DumbbellNetwork extends Module
         *.ipv4.arp.typename = default(hasGlobalArp ? "GlobalArp" : "Arp");
 
     submodules:
+        // ---- Sources ----
         deviceSource1: TsnDevice {
             @display("p=450,100");
         }
         deviceSource2: TsnDevice {
+            @display("p=450,200");
+        }
+        deviceSource3: TsnDevice {
             @display("p=450,300");
         }
-        deviceSink1: TsnDevice {
-            @display("p=890,100");
-        }
-        deviceSink2: TsnDevice {
-            @display("p=890,300");
-        }
-        switch1: TsnSwitch {
-            @display("p=633,200");
-        }
-        switch2: TsnSwitch {
-            @display("p=799,200");
+        deviceSource4: TsnDevice {
+            @display("p=450,400");
         }
 
+        // ---- Sinks ----
+        deviceSink1: TsnDevice {
+            @display("p=900,250");
+        }
+
+		// ---- Switches ----
+        switch1: TsnSwitch {
+            @display("p=600,150");
+        }
+        switch2: TsnSwitch {
+            @display("p=600,350");
+        }
+        switch3: TsnSwitch {
+            @display("p=700,250");
+        }
+        switch4: TsnSwitch {
+            @display("p=800,250");
+        }
+
+		// ---- misc ----
         visualizer: <default(firstAvailableOrEmpty("IntegratedCanvasVisualizer"))> like IIntegratedVisualizer if typename != "" {
             @display("p=200,100;is=s");
         }
@@ -64,8 +79,13 @@ network DumbbellNetwork extends Module
         deviceSource1.ethg++ <--> EthernetLink <--> switch1.ethg++;
         deviceSource2.ethg++ <--> EthernetLink <--> switch1.ethg++;
 
-        deviceSink1.ethg++ <--> EthernetLink <--> switch2.ethg++;
-        deviceSink2.ethg++ <--> EthernetLink <--> switch2.ethg++;
+        deviceSource3.ethg++ <--> EthernetLink <--> switch2.ethg++;
+        deviceSource4.ethg++ <--> EthernetLink <--> switch2.ethg++;
 
-        switch1.ethg++ <--> EthernetLink <--> switch2.ethg++;
+        switch1.ethg++ <--> EthernetLink <--> switch3.ethg++;
+        switch2.ethg++ <--> EthernetLink <--> switch3.ethg++;
+
+		switch3.ethg++ <--> EthernetLink <--> switch4.ethg++;
+
+        deviceSink1.ethg++ <--> EthernetLink <--> switch4.ethg++;
 }

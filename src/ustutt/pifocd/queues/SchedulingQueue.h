@@ -27,7 +27,7 @@ public:
         bool operator()(const Entry& a, const Entry& b) const {
             // INFO: This is not stable. But it doesn't need to.
             // When there are elements with the same rank, we don't guarantee anything about the order of the elements.
-            return a.rank > b.rank;
+            return a.rank < b.rank;
         }
     };
 
@@ -39,12 +39,12 @@ protected:
     std::vector<SchedulingQueue *> children;
     SchedulingQueue *parent;
 
-    SchedulingTransaction txn;
+    SchedulingTransaction schedulingTransaction;
     SchedulingTree *st = nullptr;
 
 public:
-    SchedulingQueue(SchedulingTransaction txn, bool isLeaf)
-        : isLeaf(isLeaf), txn(txn)
+    SchedulingQueue(SchedulingTransaction sdtxn, bool isLeaf)
+        : isLeaf(isLeaf), schedulingTransaction(sdtxn)
     {
         this->pq = {};
         this->children = {};
