@@ -13,7 +13,7 @@ void SchedulingQueue::clear() {
 
 void SchedulingQueue::push(PIFOPacket packet) {
   Entry entry{};
-  uint64_t rank = this->schedulingTransaction(packet);
+  uint64_t rank = this->schedulingTransaction.value()(packet);
 
   // assert pcp range, since we might use this as a ref into the children.
   // This allows us to safely downcast to uint8_t later as well.
@@ -40,9 +40,12 @@ void SchedulingQueue::push(PIFOPacket packet) {
   }
 }
 
-std::optional<PIFOPacket> SchedulingQueue::pull() {
-
+std::optional<PIFOPacket> SchedulingQueue::pull(bool isRgp) {
   EV_INFO << "PIFOCD: SchedulingQueue pull" << EV_ENDL;
+
+  if (pq.size() <= 0) {
+      return std::nullopt;
+  }
 
   Entry head = pq.top();
 
@@ -65,13 +68,16 @@ std::optional<PIFOPacket> SchedulingQueue::pull() {
       throw cRuntimeError("PIFOCD: SchedulingQueue ref is pointing out of bounds");
 
     // This can go on recursively until it reaches the leaf.
-    return this->st->pullLeaf(ref);
+    return this->st->pullLeaf(ref, isRgp);
   }
 }
 
-std::optional<PIFOPacket> SchedulingQueue::peek() const {
-
+std::optional<PIFOPacket> SchedulingQueue::peek(bool isRgp) const {
   EV_INFO << "PIFOCD: SchedulingQueue peek" << EV_ENDL;
+
+  if (pq.size() <= 0) {
+      return std::nullopt;
+  }
 
   Entry head = pq.top();
 
@@ -95,7 +101,6 @@ std::optional<PIFOPacket> SchedulingQueue::peek() const {
     if (!this->children[ref])
       throw cRuntimeError("PIFOCD: SchedulingQueue ref is not there");
 
-    // throw cRuntimeError("test2 length children = %d", children.size());
-    return this->st->peekLeaf(ref);
+    return this->st->peekLeaf(ref, isRgp);
   }
 }

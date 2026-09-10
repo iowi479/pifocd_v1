@@ -33,19 +33,20 @@ public:
   std::vector<uint64_t> arrival_times;
   std::vector<int> counters;
 
+  bool isRgp;
+
   int packet_counter = 0;
   std::unordered_map<int, Packet *> packet_storage;
 
 public:
-  SchedulingTree() : root(SchedulingQueue(pmp_schedulingTransaction, false)) {
+  SchedulingTree() : root(SchedulingQueue(false)) {
     this->root.setSchedulingTree(this);
 
     int leafsCount = 8;
     leafs.reserve(leafsCount);
 
     for (int i = 0; i < leafsCount; i++) {
-      ShapingQueue q = ShapingQueue(
-          pmp_shapingTransaction, pmp_schedulingTransaction, true, (uint8_t)i);
+      ShapingQueue q = ShapingQueue(true, (uint8_t)i);
       q.setSchedulingTree(this);
 
       root.addChild(&q);
@@ -94,6 +95,6 @@ public:
 
   void notifyCanPullPacketChanged();
 
-  std::optional<PIFOPacket> peekLeaf(uint8_t id) const;
-  std::optional<PIFOPacket> pullLeaf(uint8_t id);
+  std::optional<PIFOPacket> peekLeaf(uint8_t id, bool isRgp) const;
+  std::optional<PIFOPacket> pullLeaf(uint8_t id, bool isRgp);
 };

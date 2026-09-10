@@ -27,4 +27,10 @@ uint64_t pmp_shapingTransaction(PIFOPacket p,
 
 uint64_t pmp_schedulingTransaction(PIFOPacket p);
 
+uint64_t rgp_shapingTransaction(PIFOPacket p,
+                                std::vector<uint64_t> &arrival_times,
+                                std::vector<int> &counters);
+
+uint64_t rgp_schedulingTransaction(PIFOPacket p);
+
 uint64_t simtime_to_nsec(inet::simtime_t t);

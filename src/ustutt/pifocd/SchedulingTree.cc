@@ -25,6 +25,18 @@ void SchedulingTree::initialize(int stage) {
   }
 
   this->wakeMsg = new cMessage("wake");
+
+  this->isRgp = par("useRgpProtocol").boolValue();
+  EV_INFO << "PIFOCD: isRgp = " << this->isRgp << EV_ENDL;
+
+  SchedulingQueue::SchedulingTransaction sdtxn = this->isRgp ? rgp_schedulingTransaction : pmp_schedulingTransaction;
+  ShapingQueue::ShapingTransaction sptxn = this->isRgp ? rgp_shapingTransaction : pmp_shapingTransaction;
+
+  this->root.setSchedulingTransaction(sdtxn);
+  for (int i = 0; i < this->leafs.size(); i++) {
+      this->leafs[i].setSchedulingTransaction(sdtxn);
+      this->leafs[i].setShapingTransaction(sptxn);
+   }
 }
 
 void SchedulingTree::pushPacket(Packet *packet, const cGate *gate) {
@@ -59,23 +71,33 @@ void SchedulingTree::notifyCanPullPacketChanged() {
 Packet *SchedulingTree::pullPacket(const cGate *gate) {
   Enter_Method("pullPacket");
 
-  Packet *packet = nullptr;
+  std::optional<PIFOPacket> opt = std::nullopt;
+
   if (root.size() > 0) {
-    std::optional<PIFOPacket> opt = root.pull();
+      opt = root.pull(false);
+  } else if (this->isRgp && this->packet_storage.size() > 0) {
+      // There is a packet waiting but not in root.
+      // Since we are in RGP we can conditionally dequeue
 
-    if (!opt.has_value()) {
-        return nullptr;
-    }
-
-    PIFOPacket p = opt.value();
-
-
-    packet = this->packet_storage[p.packet_id];
-    this->packet_storage.erase(p.packet_id);
-
-    if (collector != nullptr)
-      animatePullPacket(packet, outputGate, collector.getReferencedGate());
+      int pcp_counter = this->leafs.size() - 1;
+      while (pcp_counter >= 0 && !opt.has_value()) {
+          opt = this->leafs[pcp_counter].pull(true);
+      }
   }
+
+
+  if (!opt.has_value()) {
+      return nullptr;
+  }
+
+  PIFOPacket p = opt.value();
+  Packet *packet = nullptr;
+
+  packet = this->packet_storage[p.packet_id];
+  this->packet_storage.erase(p.packet_id);
+
+  if (collector != nullptr)
+      animatePullPacket(packet, outputGate, collector.getReferencedGate());
 
   return packet;
 }
@@ -89,16 +111,22 @@ Packet *SchedulingTree::canPullPacket(const cGate *gate) const {
   // TODO: this needs to be fixed
   EV_INFO << "PIFOCD: SchedulingTree canPullPacket" << EV_ENDL;
 
-  // WARN: Was pull
-  std::optional<PIFOPacket> opt = root.peek();
+  std::optional<PIFOPacket> opt = std::nullopt;
 
-  if (!opt.has_value()) {
-      return nullptr;
+  opt = root.peek(this->isRgp);
+
+  if (this->isRgp && !opt.has_value()) {
+      int pcp_counter = this->leafs.size() - 1;
+      while (pcp_counter >= 0 && !opt.has_value()) {
+          opt = this->leafs[pcp_counter].peek(true);
+      }
   }
 
-  PIFOPacket p = opt.value();
+  Packet *packet = nullptr;
 
-  Packet *packet = this->packet_storage.at(p.packet_id);
+  if (opt.has_value()) {
+      packet = this->packet_storage.at(opt.value().packet_id);
+  }
 
   return packet;
 }
@@ -107,8 +135,11 @@ int SchedulingTree::getNumPackets() const {
   // This seems to determine if omnet will pull a packet from this construct.
   // If this is non-empty a packet will be pulled.
 
-  // EV_INFO << "SchedulingTree getNumPackets = " << root.size() << EV_ENDL;
-  return root.size();
+   if (this->isRgp) {
+       return this->packet_storage.size();
+   } else {
+       return this->root.size();
+   }
 }
 
 void SchedulingTree::handleMessage(omnetpp::cMessage *msg) {
@@ -177,10 +208,10 @@ void SchedulingTree::updateTimer(uint8_t id, uint64_t rt) {
   this->scheduleWake();
 }
 
-std::optional<PIFOPacket> SchedulingTree::peekLeaf(uint8_t id) const {
-  return this->leafs[id].peek();
+std::optional<PIFOPacket> SchedulingTree::peekLeaf(uint8_t id, bool isRgp) const {
+  return this->leafs[id].peek(isRgp);
 }
 
-std::optional<PIFOPacket> SchedulingTree::pullLeaf(uint8_t id) {
-  return this->leafs[id].pull();
+std::optional<PIFOPacket> SchedulingTree::pullLeaf(uint8_t id, bool isRgp) {
+  return this->leafs[id].pull(isRgp);
 }

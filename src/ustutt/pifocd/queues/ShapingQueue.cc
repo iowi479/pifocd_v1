@@ -11,13 +11,8 @@ void ShapingQueue::push(PIFOPacket packet) {
   Entry sq_entry{};
   Entry pq_entry{};
 
-  uint64_t rt = this->shapingTransaction(packet, this->st->arrival_times,
-                                         this->st->counters);
-
-  // WARN: We assume here, that we are a Leaf. In PIFOCD it can't be different.
-  // This simplifies the actions drastically here.
-  if (!isLeaf)
-    throw cRuntimeError("PIFOCD: ShapingQueue(id=%d) is not a leaf", id);
+  ShapingTransaction sptxn = this->shapingTransaction.value();
+  uint64_t rt = sptxn(packet, this->st->arrival_times, this->st->counters);
 
   pq_entry.value = packet;
   pq_entry.rank = rt;
@@ -45,8 +40,9 @@ void ShapingQueue::push(PIFOPacket packet) {
       parent->push(packet);
     }
   } else {
-    // insert the element into the queue
+    // insert the element into the shaping queue
     sq.push(sq_entry);
+
     EV_INFO << "PIFOCD: ShapingQueue(id=" << (int)this->id
             << ") enqueued 1 shaping-ref with rt=" << rt << EV_ENDL;
   }
@@ -54,105 +50,82 @@ void ShapingQueue::push(PIFOPacket packet) {
   this->updated();
 }
 
-std::optional<PIFOPacket> ShapingQueue::pull() {
-  if (sq.size() < pq.size()) {
-    // First Packet of pq is already released from sq since rt < now.
-    // So we can just remove the packet.
-    Entry pq_entry = pq.top();
+std::optional<PIFOPacket> ShapingQueue::pull(bool isRgp) {
+    // There are three different cases to look at:
+    // 1. Whole Queue is empty
+    // 2. There is a released packet
+    // 3. There is no released packet yet. (Conditional dequeuing)
 
-    if (!isLeaf)
-      throw cRuntimeError("PIFOCD: ShapingQueue(id=%d) is not a leaf", id);
-    if (!std::holds_alternative<PIFOPacket>(pq_entry.value))
-      throw cRuntimeError(
-          "PIFOCD: ShapingQueue(id=%d) pq_entry doesn't hold a Packet *", id);
+    std::optional<PIFOPacket> peeked = this->peek(isRgp);
 
-    PIFOPacket packet = std::get<PIFOPacket>(pq_entry.value);
-    pq.pop();
+    if (pq.empty()) {
+        // No packets in this Shaping queue
+        return std::nullopt;
+    } else if (sq.size() < pq.size()) {
+        // This packet is not in sq anymore.
+        pq.pop();
+        return peeked;
+    } else if (isRgp && sq.size() == pq.size()) {
+        // There is atleast one packet since !pq.empty() and all are waiting for release.
+        pq.pop();
+        sq.pop();
 
-    return packet;
-  } else if (pq.size() > 0 && sq.size() == pq.size()) {
-    // There are packets. But all are waiting for release by sq.
-    // This is the manual pulling of PIFOCD
+        // update since the head of sq changed, so we need to update the wake timer as well.
+        this->updated();
 
-    Entry pq_entry = pq.top();
+        return peeked;
+    } else {
+        // This should not happen. (Fall back)
+        EV_INFO << "PIFOCD: peeking at queue in weird state: sq.size() = " << sq.size()
+                << ", pq.size() = " << pq.size() << EV_ENDL;
 
-    if (!isLeaf)
-      throw cRuntimeError("PIFOCD: ShapingQueue(id=%d) is not a leaf", id);
-    if (!std::holds_alternative<PIFOPacket>(pq_entry.value))
-      throw cRuntimeError(
-          "PIFOCD: ShapingQueue(id=%d) pq_entry doesn't hold a Packet *", id);
-
-    PIFOPacket packet = std::get<PIFOPacket>(pq_entry.value);
-
-    pq.pop();
-    sq.pop();
-
-    // update since the head of sq changed.
-    this->updated();
-    return packet;
-  } else {
-    // something weird. Fall back
-    EV_INFO << "PIFOCD: pulling from queue in weird state: sq.size() = " << sq.size()
-            << ", pq.size() = " << pq.size() << EV_ENDL;
-
-    return std::nullopt;
-  }
+        return std::nullopt;
+    }
 }
 
-std::optional<PIFOPacket> ShapingQueue::peek() const {
+std::optional<PIFOPacket> ShapingQueue::peek(bool isRgp) const {
+    // There are three different cases to look at:
+    // 1. Whole Queue is empty
+    // 2. There is a released packet
+    // 3. There is no released packet yet. (Conditional dequeuing)
 
-  if (sq.size() < pq.size()) {
-    // First Packet of pq is already released from sq since rt < now.
-    // So we can just remove the packet.
-    Entry pq_entry = pq.top();
+    if (pq.empty()) {
+        // No packets in this Shaping queue
+        return std::nullopt;
+    } else if (sq.size() < pq.size()) {
+        // This packet is not in sq anymore.
+        Entry released_packet_entry = pq.top();
+        PIFOPacket packet = std::get<PIFOPacket>(released_packet_entry.value);
+        return packet;
+    } else if (isRgp && sq.size() == pq.size()) {
+        // There is atleast one packet since !pq.empty() and all are waiting for release.
+        Entry unreleased_packet_entry = pq.top();
+        PIFOPacket packet = std::get<PIFOPacket>(unreleased_packet_entry.value);
+        return packet;
+    } else {
+        // This should not happen. (Fall back)
+        EV_INFO << "PIFOCD: peeking at queue in weird state: sq.size() = " << sq.size()
+                << ", pq.size() = " << pq.size() << EV_ENDL;
 
-    if (!isLeaf)
-      throw cRuntimeError("PIFOCD: ShapingQueue(id=%d) is not a leaf", id);
-    if (!std::holds_alternative<PIFOPacket>(pq_entry.value))
-      throw cRuntimeError(
-          "PIFOCD: ShapingQueue(id=%d) pq_entry doesn't hold a Packet *", id);
-
-    PIFOPacket packet = std::get<PIFOPacket>(pq_entry.value);
-
-    return packet;
-  } else if (pq.size() > 0 && sq.size() == pq.size()) {
-    // There are packets. But all are waiting for release by sq.
-    // This is the manual pulling of PIFOCD
-
-    Entry pq_entry = pq.top();
-
-    if (!isLeaf)
-      throw cRuntimeError("PIFOCD: ShapingQueue(id=%d) is not a leaf", id);
-    if (!std::holds_alternative<PIFOPacket>(pq_entry.value))
-      throw cRuntimeError(
-          "PIFOCD: ShapingQueue(id=%d) pq_entry doesn't hold a Packet *", id);
-
-    PIFOPacket packet = std::get<PIFOPacket>(pq_entry.value);
-
-    return packet;
-  } else {
-    // something weird. Fall back
-    EV_INFO << "PIFOCD: peeking at queue in weird state: sq.size() = " << sq.size()
-            << ", pq.size() = " << pq.size() << EV_ENDL;
-
-    return std::nullopt;
-  }
+        return std::nullopt;
+    }
 }
 
 void ShapingQueue::updated() {
-  if (sq.size() > 0) {
-    Entry head = sq.top();
-    uint64_t rt = head.rank;
+    if (sq.empty()) {
+        // No packets left.
+        this->st->updateTimer(id, UINT64_MAX);
+    } else {
+        // Still packets in the sq.
+        uint64_t rt = sq.top().rank;
 
-    this->st->updateTimer(id, rt);
-  } else {
-    // There are no Packets anymore.
-    this->st->updateTimer(id, UINT64_MAX);
-  }
+        this->st->updateTimer(id, rt);
+    }
 
-  // A update happened.
-  // It may be possible, a packet is now ready for pulling.
-  this->st->notifyCanPullPacketChanged();
+
+    // A update happened.
+    // It may be possible, a packet is now ready for pulling.
+    this->st->notifyCanPullPacketChanged();
 }
 
 void ShapingQueue::wake() {
@@ -167,11 +140,9 @@ void ShapingQueue::wake() {
     uint64_t rt = head.rank;
 
     if (now >= rt) {
-      if (!isLeaf)
-        throw cRuntimeError("PIFOCD: ShapingQueue(id=%d) is not a leaf", id);
-
       PIFOPacket packet = std::get<PIFOPacket>(head.value);
       sq.pop();
+
       if (parent != nullptr) {
         parent->push(packet);
       }

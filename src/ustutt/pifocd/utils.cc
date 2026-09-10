@@ -82,6 +82,34 @@ uint64_t pmp_shapingTransaction(PIFOPacket p,
 
 uint64_t pmp_schedulingTransaction(PIFOPacket p) { return p.flow.pcp; }
 
+uint64_t rgp_shapingTransaction(PIFOPacket p,
+                                std::vector<uint64_t> &arrival_times,
+                                std::vector<int> &counters) {
+
+  uint64_t now = simtime_to_nsec(simTime());
+
+  if (p.flow.id >= counters.size()) {
+    // Resize the vectors to accommodate the new flow ID
+    size_t newSize = p.flow.id + 1;
+
+    counters.resize(newSize, 0);
+    arrival_times.resize(newSize, 0);
+  }
+
+  if (counters[p.flow.id] == 0) {
+    arrival_times[p.flow.id] = now;
+  }
+
+  uint64_t rt =
+      arrival_times[p.flow.id] + (counters[p.flow.id] * periods[p.flow.id]);
+
+  counters[p.flow.id]++;
+
+  return rt;
+}
+
+uint64_t rgp_schedulingTransaction(PIFOPacket p) { return p.flow.pcp; }
+
 uint64_t simtime_to_nsec(inet::simtime_t t) {
   return (uint64_t)(SIMTIME_DBL(t) * 1e9 + 0.5);
 }

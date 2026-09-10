@@ -18,20 +18,24 @@ protected:
   std::priority_queue<Entry, std::vector<Entry>, Compare> sq;
 
   uint8_t id;
-  ShapingTransaction shapingTransaction;
+  std::optional<ShapingTransaction> shapingTransaction;
 
 public:
-  ShapingQueue(ShapingTransaction sptxn, SchedulingTransaction sdtxn,
-               bool isLeaf, uint8_t id)
-      : SchedulingQueue(sdtxn, isLeaf), id(id), shapingTransaction(sptxn) {
+  ShapingQueue(bool isLeaf, uint8_t id) : SchedulingQueue(isLeaf), id(id) {
     this->sq = {};
+    this->shapingTransaction = std::nullopt;
+
+    if (!isLeaf)
+      throw cRuntimeError("PIFOCD: ShapingQueue(id=%d) is not a leaf", id);
   }
 
   ~ShapingQueue() {};
 
+  void setShapingTransaction(ShapingTransaction sptxn) { this->shapingTransaction = sptxn;}
+
   void push(PIFOPacket packet) override;
-  std::optional<PIFOPacket> pull() override;
-  std::optional<PIFOPacket> peek() const override;
+  std::optional<PIFOPacket> pull(bool isRgp) override;
+  std::optional<PIFOPacket> peek(bool isRgp) const override;
 
   /**
    * Something in the queue updated.

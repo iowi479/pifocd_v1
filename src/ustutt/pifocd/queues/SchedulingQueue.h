@@ -38,15 +38,15 @@ protected:
   std::vector<SchedulingQueue *> children;
   SchedulingQueue *parent;
 
-  SchedulingTransaction schedulingTransaction;
+  std::optional<SchedulingTransaction> schedulingTransaction;
   SchedulingTree *st = nullptr;
 
 public:
-  SchedulingQueue(SchedulingTransaction sdtxn, bool isLeaf)
-      : isLeaf(isLeaf), schedulingTransaction(sdtxn) {
+  SchedulingQueue(bool isLeaf) : isLeaf(isLeaf) {
     this->pq = {};
     this->children = {};
     this->parent = nullptr;
+    this->schedulingTransaction = std::nullopt;
   };
 
   virtual ~SchedulingQueue() { this->clear(); };
@@ -57,11 +57,13 @@ public:
 
   void addChild(SchedulingQueue *child) { this->children.push_back(child); }
 
+  void setSchedulingTransaction(SchedulingTransaction sdtxn) { this->schedulingTransaction = sdtxn;}
+
   int size() const;
   bool isEmpty() const;
   void clear();
 
   virtual void push(PIFOPacket packet);
-  virtual std::optional<PIFOPacket> pull();
-  virtual std::optional<PIFOPacket> peek() const;
+  virtual std::optional<PIFOPacket> pull(bool isRgp);
+  virtual std::optional<PIFOPacket> peek(bool isRgp) const;
 };
