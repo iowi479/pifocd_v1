@@ -1,81 +1,65 @@
 #pragma once
 
-#include <vector>
+#include "inet/common/packet/Packet.h"
 #include <queue>
 #include <variant>
-#include "inet/common/packet/Packet.h"
-
+#include <vector>
 
 using namespace inet;
 
 // INFO: Forward declaration to avoid compiler issues.
 class SchedulingTree;
 
-
-class SchedulingQueue
-{
+class SchedulingQueue {
 public:
-    using SchedulingTransaction = std::function<uint64_t(inet::Packet *)>;
-    using V = std::variant<Packet *, uint8_t>;
+  using SchedulingTransaction = std::function<uint64_t(PIFOPacket p)>;
+  using V = std::variant<PIFOPacket, uint8_t>;
 
-    struct Entry {
-        V value;
-        uint64_t rank;
-    };
+  struct Entry {
+    V value;
+    uint64_t rank;
+  };
 
-    struct Compare {
-        bool operator()(const Entry& a, const Entry& b) const {
-            // INFO: This is not stable. But it doesn't need to.
-            // When there are elements with the same rank, we don't guarantee anything about the order of the elements.
-            return a.rank < b.rank;
-        }
-    };
-
+  struct Compare {
+    bool operator()(const Entry &a, const Entry &b) const {
+      // INFO: This is not stable. But it doesn't need to.
+      // When there are elements with the same rank, we don't guarantee anything
+      // about the order of the elements.
+      return a.rank < b.rank;
+    }
+  };
 
 protected:
-    std::priority_queue<Entry, std::vector<Entry>, Compare> pq;
+  std::priority_queue<Entry, std::vector<Entry>, Compare> pq;
 
-    bool isLeaf;
-    std::vector<SchedulingQueue *> children;
-    SchedulingQueue *parent;
+  bool isLeaf;
+  std::vector<SchedulingQueue *> children;
+  SchedulingQueue *parent;
 
-    SchedulingTransaction schedulingTransaction;
-    SchedulingTree *st = nullptr;
+  SchedulingTransaction schedulingTransaction;
+  SchedulingTree *st = nullptr;
 
 public:
-    SchedulingQueue(SchedulingTransaction sdtxn, bool isLeaf)
-        : isLeaf(isLeaf), schedulingTransaction(sdtxn)
-    {
-        this->pq = {};
-        this->children = {};
-        this->parent = nullptr;
-    };
+  SchedulingQueue(SchedulingTransaction sdtxn, bool isLeaf)
+      : isLeaf(isLeaf), schedulingTransaction(sdtxn) {
+    this->pq = {};
+    this->children = {};
+    this->parent = nullptr;
+  };
 
-    virtual ~SchedulingQueue(){
-        this->clear();
-    };
+  virtual ~SchedulingQueue() { this->clear(); };
 
-    void setSchedulingTree(SchedulingTree *st) {
-        this->st = st;
-    }
+  void setSchedulingTree(SchedulingTree *st) { this->st = st; }
 
-    void setParent(SchedulingQueue *parent) {
-        this->parent = parent;
-    }
+  void setParent(SchedulingQueue *parent) { this->parent = parent; }
 
-    void addChild(SchedulingQueue *child) {
-        this->children.push_back(child);
+  void addChild(SchedulingQueue *child) { this->children.push_back(child); }
 
-    }
+  int size() const;
+  bool isEmpty() const;
+  void clear();
 
-
-    int size() const;
-    bool isEmpty() const;
-    void clear();
-
-    virtual void push(Packet *packet);
-    virtual Packet *pull();
-    virtual Packet *peek() const;
+  virtual void push(PIFOPacket p);
+  virtual PIFOPacket pull();
+  virtual PIFOPacket peek() const;
 };
-
-
