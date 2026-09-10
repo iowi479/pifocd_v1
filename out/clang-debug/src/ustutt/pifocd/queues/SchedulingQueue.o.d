@@ -34,12 +34,15 @@
   ../../inet-4.6.0/src/inet/common/packet/chunk/SliceChunk.h \
   ../../inet-4.6.0/src/inet/common/packet/tag/ITaggedObject.h \
   ../../inet-4.6.0/src/inet/common/packet/tag/SharingTagSet.h \
+  ustutt/pifocd/queues/../utils.h \
+  ../../inet-4.6.0/src/inet/protocolelement/redundancy/StreamTag_m.h \
+  ../../inet-4.6.0/src/inet/common/INETDefs_m.h \
+  ../../inet-4.6.0/src/inet/common/TagBase_m.h \
   ustutt/pifocd/queues/../SchedulingTree.h \
   ../../inet-4.6.0/src/inet/queueing/base/PacketQueueBase.h \
   ../../inet-4.6.0/src/inet/queueing/base/PacketProcessorBase.h \
   ../../inet-4.6.0/src/inet/common/Simsignals.h \
   ../../inet-4.6.0/src/inet/common/Simsignals_m.h \
-  ../../inet-4.6.0/src/inet/common/INETDefs_m.h \
   ../../inet-4.6.0/src/inet/common/SimpleModule.h \
   ../../inet-4.6.0/src/inet/common/ModuleMixin.h \
   ../../inet-4.6.0/src/inet/common/StringFormat.h \
@@ -55,11 +58,9 @@
   ../../inet-4.6.0/src/inet/queueing/contract/IActivePacketSink.h \
   ../../inet-4.6.0/src/inet/queueing/common/ActivePacketSourceRef.h \
   ../../inet-4.6.0/src/inet/queueing/contract/IActivePacketSource.h \
-  ustutt/pifocd/queues/../utils.h \
-  ../../inet-4.6.0/src/inet/protocolelement/redundancy/StreamTag_m.h \
-  ../../inet-4.6.0/src/inet/common/TagBase_m.h \
   ustutt/pifocd/queues/../queues/SchedulingQueue.h \
-  ustutt/pifocd/queues/../queues/ShapingQueue.h
+  ustutt/pifocd/queues/../queues/ShapingQueue.h \
+  ustutt/pifocd/queues/../queues/../utils.h
 ustutt/pifocd/queues/SchedulingQueue.h:
 ../../inet-4.6.0/src/inet/common/packet/Packet.h:
 ../../inet-4.6.0/src/inet/common/IPrintableObject.h:
@@ -94,12 +95,15 @@ ustutt/pifocd/queues/SchedulingQueue.h:
 ../../inet-4.6.0/src/inet/common/packet/chunk/SliceChunk.h:
 ../../inet-4.6.0/src/inet/common/packet/tag/ITaggedObject.h:
 ../../inet-4.6.0/src/inet/common/packet/tag/SharingTagSet.h:
+ustutt/pifocd/queues/../utils.h:
+../../inet-4.6.0/src/inet/protocolelement/redundancy/StreamTag_m.h:
+../../inet-4.6.0/src/inet/common/INETDefs_m.h:
+../../inet-4.6.0/src/inet/common/TagBase_m.h:
 ustutt/pifocd/queues/../SchedulingTree.h:
 ../../inet-4.6.0/src/inet/queueing/base/PacketQueueBase.h:
 ../../inet-4.6.0/src/inet/queueing/base/PacketProcessorBase.h:
 ../../inet-4.6.0/src/inet/common/Simsignals.h:
 ../../inet-4.6.0/src/inet/common/Simsignals_m.h:
-../../inet-4.6.0/src/inet/common/INETDefs_m.h:
 ../../inet-4.6.0/src/inet/common/SimpleModule.h:
 ../../inet-4.6.0/src/inet/common/ModuleMixin.h:
 ../../inet-4.6.0/src/inet/common/StringFormat.h:
@@ -115,8 +119,6 @@ ustutt/pifocd/queues/../SchedulingTree.h:
 ../../inet-4.6.0/src/inet/queueing/contract/IActivePacketSink.h:
 ../../inet-4.6.0/src/inet/queueing/common/ActivePacketSourceRef.h:
 ../../inet-4.6.0/src/inet/queueing/contract/IActivePacketSource.h:
-ustutt/pifocd/queues/../utils.h:
-../../inet-4.6.0/src/inet/protocolelement/redundancy/StreamTag_m.h:
-../../inet-4.6.0/src/inet/common/TagBase_m.h:
 ustutt/pifocd/queues/../queues/SchedulingQueue.h:
 ustutt/pifocd/queues/../queues/ShapingQueue.h:
+ustutt/pifocd/queues/../queues/../utils.h:

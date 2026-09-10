@@ -10,10 +10,10 @@ using namespace inet;
 // INFO: Has to be updated with omnetpp.ini.
 static uint64_t periods[4] = {400000, 500000, 500000, 600000};
 
-string getStreamNameFromPacket(inet::Packet *packet) {
+std::string getStreamNameFromPacket(inet::Packet *packet) {
 
   if (packet == nullptr) {
-    throw std::runtime_error("getPacketFlow(): packet is nullptr");
+    throw std::runtime_error("PIFOCD: getPacketFlow(): packet is nullptr");
   }
 
   packet->getName();
@@ -22,30 +22,30 @@ string getStreamNameFromPacket(inet::Packet *packet) {
 
   if (streamReq == nullptr) {
     using namespace omnetpp;
-    EV_INFO << "Packet has no StreamReq tag: " << packet->getName() << endl;
-    throw std::out_of_range("No StreamReq tag found!");
+    EV_INFO << "PIFOCD: Packet has no StreamReq tag: " << packet->getName() << endl;
+    throw std::out_of_range("PIFOCD: No StreamReq tag found!");
   }
 
   const char *streamName = streamReq->getStreamName();
 
   if (streamName == nullptr) {
-    throw std::out_of_range("No StreamName found!");
+    throw std::out_of_range("PIFOCD: No StreamName found!");
   }
 
-  string streamNameStr(streamName);
+  std::string streamNameStr(streamName);
 
   return streamNameStr;
 }
 
-Flow getPacketFlow(string &streamName) {
+Flow getPacketFlow(std::string &streamName) {
   // Expected format: "Stream-(pcp)-(id)"
   // Example: "Stream-(3)-(42)"
   std::regex pattern(R"(Stream-\(([0-7])\)-\(([0-9]+)\))");
-  std::cmatch match;
+  std::smatch match;
 
   if (!std::regex_match(streamName, match, pattern)) {
     throw std::out_of_range(
-        "StreamName is not fitting: expected 'Stream-(pcp)-(id)'");
+        "PIFOCD: StreamName is not fitting: expected 'Stream-(pcp)-(id)'");
   }
 
   int pcp = std::stoi(match[1].str());
@@ -62,7 +62,7 @@ uint64_t pmp_shapingTransaction(PIFOPacket p,
 
   if (p.flow.id >= counters.size()) {
     // Resize the vectors to accommodate the new flow ID
-    size_t newSize = f.id + 1;
+    size_t newSize = p.flow.id + 1;
 
     counters.resize(newSize, 0);
     arrival_times.resize(newSize, 0);

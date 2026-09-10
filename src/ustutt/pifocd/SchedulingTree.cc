@@ -34,14 +34,14 @@ void SchedulingTree::pushPacket(Packet *packet, const cGate *gate) {
   // We keep ownership until we transmit the packet further.
   take(packet);
 
-  string streamName = getStreamNameFromPacket(packet);
+  std::string streamName = getStreamNameFromPacket(packet);
   int packet_id = this->packet_counter++;
 
   this->packet_storage[packet_id] = packet;
 
   PIFOPacket p{packet_id, streamName, getPacketFlow(streamName)};
 
-  EV_INFO << "Pushing packet (pcp=" << p.flow.pcp
+  EV_INFO << "PIFOCD: Pushing packet (pcp=" << p.flow.pcp
           << ") of stream: " << p.streamName << EV_ENDL;
 
   this->leafs[p.flow.pcp].push(p);
@@ -51,7 +51,7 @@ void SchedulingTree::pushPacket(Packet *packet, const cGate *gate) {
 
 void SchedulingTree::notifyCanPullPacketChanged() {
   if (collector != nullptr && getNumPackets() > 0) {
-    EV_INFO << "SchedulingTree notifyCanPullPacketChanged" << EV_ENDL;
+    EV_INFO << "PIFOCD: SchedulingTree notifyCanPullPacketChanged" << EV_ENDL;
     collector.handleCanPullPacketChanged();
   }
 }
@@ -61,10 +61,17 @@ Packet *SchedulingTree::pullPacket(const cGate *gate) {
 
   Packet *packet = nullptr;
   if (root.size() > 0) {
-    PIFOPacket p = root.pull();
+    std::optional<PIFOPacket> opt = root.pull();
+
+    if (!opt.has_value()) {
+        return nullptr;
+    }
+
+    PIFOPacket p = opt.value();
+
 
     packet = this->packet_storage[p.packet_id];
-    this->packet_storage[p.packet_id].erase();
+    this->packet_storage.erase(p.packet_id);
 
     if (collector != nullptr)
       animatePullPacket(packet, outputGate, collector.getReferencedGate());
@@ -80,10 +87,18 @@ Packet *SchedulingTree::canPullPacket(const cGate *gate) const {
   // whether this is non-zero.
 
   // TODO: this needs to be fixed
-  EV_INFO << "SchedulingTree canPullPacket" << EV_ENDL;
+  EV_INFO << "PIFOCD: SchedulingTree canPullPacket" << EV_ENDL;
 
-  PIFOPacket p = root.peek();
-  Packet *packet = this->packet_storage[p.packet_id];
+  // WARN: Was pull
+  std::optional<PIFOPacket> opt = root.peek();
+
+  if (!opt.has_value()) {
+      return nullptr;
+  }
+
+  PIFOPacket p = opt.value();
+
+  Packet *packet = this->packet_storage.at(p.packet_id);
 
   return packet;
 }
@@ -100,7 +115,7 @@ void SchedulingTree::handleMessage(omnetpp::cMessage *msg) {
   if (msg == wakeMsg) {
     uint64_t now = simtime_to_nsec(simTime());
 
-    EV_INFO << "SchedulingTree: Woken @" << now << "ns" << EV_ENDL;
+    EV_INFO << "PIFOCD: SchedulingTree: Woken @" << now << "ns" << EV_ENDL;
 
     for (size_t i = 0; i < timers.size(); ++i) {
       uint64_t ts = timers[i];
@@ -141,12 +156,12 @@ void SchedulingTree::scheduleWake() {
   // This would cause issues since the message would not arrive.
   if (now > minTs) {
     // if (now >= minTs) {
-    throw cRuntimeError("New Waketime is not in the future now=%lu, minTs=%lu",
+    throw cRuntimeError("PIFOCD: New Waketime is not in the future now=%lu, minTs=%lu",
                         now, minTs);
   }
 
   if (minTs == UINT64_MAX) {
-    EV_INFO << "SchedulingTree: No next Wake since no timer requested"
+    EV_INFO << "PIFOCD: SchedulingTree: No next Wake since no timer requested"
             << EV_ENDL;
     return;
   }
@@ -154,7 +169,7 @@ void SchedulingTree::scheduleWake() {
   simtime_t t = SimTime(minTs, SIMTIME_NS);
 
   scheduleAt(t, wakeMsg);
-  EV_INFO << "SchedulingTree: Next Wake @" << minTs << "ns" << EV_ENDL;
+  EV_INFO << "PIFOCD: SchedulingTree: Next Wake @" << minTs << "ns" << EV_ENDL;
 }
 
 void SchedulingTree::updateTimer(uint8_t id, uint64_t rt) {
@@ -162,10 +177,10 @@ void SchedulingTree::updateTimer(uint8_t id, uint64_t rt) {
   this->scheduleWake();
 }
 
-PIFOPacket SchedulingTree::peekLeaf(uint8_t id) const {
+std::optional<PIFOPacket> SchedulingTree::peekLeaf(uint8_t id) const {
   return this->leafs[id].peek();
 }
 
-PIFOPacket SchedulingTree::pullLeaf(uint8_t id) {
+std::optional<PIFOPacket> SchedulingTree::pullLeaf(uint8_t id) {
   return this->leafs[id].pull();
 }

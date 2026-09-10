@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <unordered_map>
 #include <vector>
+#include <optional>
 
 using namespace inet;
 
@@ -93,6 +94,6 @@ public:
 
   void notifyCanPullPacketChanged();
 
-  Packet *peekLeaf(uint8_t id) const;
-  Packet *pullLeaf(uint8_t id);
+  std::optional<PIFOPacket> peekLeaf(uint8_t id) const;
+  std::optional<PIFOPacket> pullLeaf(uint8_t id);
 };

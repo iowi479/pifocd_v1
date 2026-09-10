@@ -1,9 +1,11 @@
 #pragma once
 
 #include "inet/common/packet/Packet.h"
+#include "../utils.h"
 #include <queue>
 #include <variant>
 #include <vector>
+#include <optional>
 
 using namespace inet;
 
@@ -12,7 +14,7 @@ class SchedulingTree;
 
 class SchedulingQueue {
 public:
-  using SchedulingTransaction = std::function<uint64_t(PIFOPacket p)>;
+  using SchedulingTransaction = std::function<uint64_t(PIFOPacket)>;
   using V = std::variant<PIFOPacket, uint8_t>;
 
   struct Entry {
@@ -59,7 +61,7 @@ public:
   bool isEmpty() const;
   void clear();
 
-  virtual void push(PIFOPacket p);
-  virtual PIFOPacket pull();
-  virtual PIFOPacket peek() const;
+  virtual void push(PIFOPacket packet);
+  virtual std::optional<PIFOPacket> pull();
+  virtual std::optional<PIFOPacket> peek() const;
 };

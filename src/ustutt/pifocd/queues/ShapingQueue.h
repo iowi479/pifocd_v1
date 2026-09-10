@@ -1,18 +1,18 @@
 #pragma once
 
 #include "SchedulingQueue.h"
+#include "../utils.h"
 #include "inet/common/packet/Packet.h"
 #include <queue>
-#include <string>
 #include <variant>
 #include <vector>
+#include <optional>
 
 using namespace inet;
 
 class ShapingQueue : public SchedulingQueue {
 public:
-  using ShapingTransaction = std::function<uint64_t(
-      string &streamName, std::vector<uint64_t> &, std::vector<int> &)>;
+  using ShapingTransaction = std::function<uint64_t(PIFOPacket, std::vector<uint64_t> &, std::vector<int> &)>;
 
 protected:
   std::priority_queue<Entry, std::vector<Entry>, Compare> sq;
@@ -29,9 +29,9 @@ public:
 
   ~ShapingQueue() {};
 
-  void push(int packet_id, string &streamname) override;
-  packet_id pull() override;
-  packet_id peek() const override;
+  void push(PIFOPacket packet) override;
+  std::optional<PIFOPacket> pull() override;
+  std::optional<PIFOPacket> peek() const override;
 
   /**
    * Something in the queue updated.

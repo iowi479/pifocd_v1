@@ -1,11 +1,13 @@
 ../out/clang-debug/src/ustutt/pifocd/queues/ShapingQueue.o: \
   ustutt/pifocd/queues/ShapingQueue.cc \
-  /home/simon/omnetpp-6.4.0/include/omnetpp.h \
+  ustutt/pifocd/queues/ShapingQueue.h \
+  ustutt/pifocd/queues/SchedulingQueue.h \
   ../../inet-4.6.0/src/inet/common/packet/Packet.h \
   ../../inet-4.6.0/src/inet/common/IPrintableObject.h \
   ../../inet-4.6.0/src/inet/common/INETDefs.h \
   ../../inet-4.6.0/src/inet/common/precompiled_debug.h \
   ../../inet-4.6.0/src/inet/common/precompiled.h \
+  /home/simon/omnetpp-6.4.0/include/omnetpp.h \
   ../../inet-4.6.0/src/inet/opp_defines.h \
   ../../inet-4.6.0/src/inet/features.h \
   ../../inet-4.6.0/src/inet/common/Compat.h \
@@ -37,8 +39,6 @@
   ../../inet-4.6.0/src/inet/protocolelement/redundancy/StreamTag_m.h \
   ../../inet-4.6.0/src/inet/common/INETDefs_m.h \
   ../../inet-4.6.0/src/inet/common/TagBase_m.h \
-  ustutt/pifocd/queues/ShapingQueue.h \
-  ustutt/pifocd/queues/SchedulingQueue.h \
   ustutt/pifocd/queues/../SchedulingTree.h \
   ../../inet-4.6.0/src/inet/queueing/base/PacketQueueBase.h \
   ../../inet-4.6.0/src/inet/queueing/base/PacketProcessorBase.h \
@@ -61,12 +61,14 @@
   ../../inet-4.6.0/src/inet/queueing/contract/IActivePacketSource.h \
   ustutt/pifocd/queues/../queues/SchedulingQueue.h \
   ustutt/pifocd/queues/../queues/ShapingQueue.h
-/home/simon/omnetpp-6.4.0/include/omnetpp.h:
+ustutt/pifocd/queues/ShapingQueue.h:
+ustutt/pifocd/queues/SchedulingQueue.h:
 ../../inet-4.6.0/src/inet/common/packet/Packet.h:
 ../../inet-4.6.0/src/inet/common/IPrintableObject.h:
 ../../inet-4.6.0/src/inet/common/INETDefs.h:
 ../../inet-4.6.0/src/inet/common/precompiled_debug.h:
 ../../inet-4.6.0/src/inet/common/precompiled.h:
+/home/simon/omnetpp-6.4.0/include/omnetpp.h:
 ../../inet-4.6.0/src/inet/opp_defines.h:
 ../../inet-4.6.0/src/inet/features.h:
 ../../inet-4.6.0/src/inet/common/Compat.h:
@@ -98,8 +100,6 @@ ustutt/pifocd/queues/../utils.h:
 ../../inet-4.6.0/src/inet/protocolelement/redundancy/StreamTag_m.h:
 ../../inet-4.6.0/src/inet/common/INETDefs_m.h:
 ../../inet-4.6.0/src/inet/common/TagBase_m.h:
-ustutt/pifocd/queues/ShapingQueue.h:
-ustutt/pifocd/queues/SchedulingQueue.h:
 ustutt/pifocd/queues/../SchedulingTree.h:
 ../../inet-4.6.0/src/inet/queueing/base/PacketQueueBase.h:
 ../../inet-4.6.0/src/inet/queueing/base/PacketProcessorBase.h:

@@ -13,14 +13,13 @@ struct Flow {
 
 struct PIFOPacket {
   int packet_id;
-  string streamName;
+  std::string streamName;
   Flow flow;
-}
+};
 
-string
-getStreamNameFromPacket(inet::Packet *packet);
+std::string getStreamNameFromPacket(inet::Packet *packet);
 
-Flow getPacketFlow(string &streamName);
+Flow getPacketFlow(std::string &streamName);
 
 uint64_t pmp_shapingTransaction(PIFOPacket p,
                                 std::vector<uint64_t> &arrival_times,
