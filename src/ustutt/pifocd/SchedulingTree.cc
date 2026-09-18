@@ -26,9 +26,66 @@ void SchedulingTree::initialize(int stage) {
 
   this->wakeMsg = new cMessage("wake");
 
+  // Read all parameters
   this->isRgp = par("useRgpProtocol").boolValue();
-  EV_INFO << "PIFOCD: isRgp = " << this->isRgp << EV_ENDL;
+  this->flowCount = par("flowCount").intValue();
+  cValueArray *phasesArray = check_and_cast<cValueArray*>(par("phases").objectValue());
+  cValueArray *accumulatedDelaysArray = check_and_cast<cValueArray*>(par("accumulatedDelays").objectValue());
+  cValueArray *periodsArray = check_and_cast<cValueArray*>(par("periods").objectValue());
 
+
+
+
+  if (phasesArray->size() != flowCount) {
+      throw cRuntimeError(
+          "phases has %d elements, but flowCount is %d",
+          phasesArray->size(),
+          flowCount
+      );
+  }
+
+  if (accumulatedDelaysArray->size() != flowCount) {
+      throw cRuntimeError(
+          "accumulatedDelays has %d elements, but flowCount is %d",
+          accumulatedDelaysArray->size(),
+          flowCount
+      );
+  }
+
+  if (periodsArray->size() != flowCount) {
+      throw cRuntimeError(
+          "periods has %d elements, but flowCount is %d",
+          periodsArray->size(),
+          flowCount
+      );
+  }
+
+  this->shaping_options.resize(flowCount);
+
+  for (int i = 0; i < flowCount; i++) {
+      uint64_t phase = static_cast<uint64_t>(phasesArray->get(i).intValue());
+      uint64_t accumulatedDelays = static_cast<uint64_t>(accumulatedDelaysArray->get(i).intValue());
+      uint64_t period = static_cast<uint64_t>(periodsArray->get(i).intValue());
+
+      // Multiply by 1000 to go from us to ns.
+      this->shaping_options[i] = ShapingOptions{
+          phase * 1000,                    // phase
+          period * 1000,                   // period
+          accumulatedDelays * 1000,        // accumulated_delays
+          0,                        // release_time
+          0                         // counter
+      };
+
+      EV_INFO << "PIFOCD: phase ["<< i << "] = " << phase << EV_ENDL;
+      EV_INFO << "PIFOCD: period ["<< i << "] = " << period << EV_ENDL;
+      EV_INFO << "PIFOCD: accumulatedDelays ["<< i << "] = " << accumulatedDelays << EV_ENDL;
+
+  }
+
+  EV_INFO << "PIFOCD: flowCount = " << this->flowCount << EV_ENDL;
+
+
+  EV_INFO << "PIFOCD: isRgp = " << this->isRgp << EV_ENDL;
   SchedulingQueue::SchedulingTransaction sdtxn = this->isRgp ? rgp_schedulingTransaction : pmp_schedulingTransaction;
   ShapingQueue::ShapingTransaction sptxn = this->isRgp ? rgp_shapingTransaction : pmp_shapingTransaction;
 

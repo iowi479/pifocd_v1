@@ -30,10 +30,12 @@ protected:
   omnetpp::cMessage *wakeMsg = nullptr;
 
 public:
-  std::vector<uint64_t> arrival_times;
-  std::vector<int> counters;
 
   bool isRgp;
+  int flowCount;
+  std::vector<ShapingOptions> shaping_options;
+
+
 
   int packet_counter = 0;
   std::unordered_map<int, Packet *> packet_storage;

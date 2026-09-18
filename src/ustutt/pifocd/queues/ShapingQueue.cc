@@ -12,7 +12,7 @@ void ShapingQueue::push(PIFOPacket packet) {
   Entry pq_entry{};
 
   ShapingTransaction sptxn = this->shapingTransaction.value();
-  uint64_t rt = sptxn(packet, this->st->arrival_times, this->st->counters);
+  uint64_t rt = sptxn(packet, this->st->shaping_options);
 
   pq_entry.value = packet;
   pq_entry.rank = rt;
@@ -72,6 +72,12 @@ std::optional<PIFOPacket> ShapingQueue::pull(bool isRgp) {
 
         // update since the head of sq changed, so we need to update the wake timer as well.
         this->updated();
+
+        // INFO: Update releasetime for next packet since we released early
+        if (peeked.has_value()) {
+            uint64_t now = simtime_to_nsec(simTime());
+            this->st->shaping_options[peeked.value().flow.id].release_time = now;
+        }
 
         return peeked;
     } else {

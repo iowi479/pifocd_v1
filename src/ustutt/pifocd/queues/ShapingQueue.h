@@ -12,7 +12,7 @@ using namespace inet;
 
 class ShapingQueue : public SchedulingQueue {
 public:
-  using ShapingTransaction = std::function<uint64_t(PIFOPacket, std::vector<uint64_t> &, std::vector<int> &)>;
+  using ShapingTransaction = std::function<uint64_t(PIFOPacket, std::vector<ShapingOptions> &)>;
 
 protected:
   std::priority_queue<Entry, std::vector<Entry>, Compare> sq;

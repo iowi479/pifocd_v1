@@ -24,6 +24,12 @@ simple SchedulingTreeQueue extends PacketQueueBase like IPacketQueue
 	parameters:
 		@display("i=block/queue");
 		@class(SchedulingTree);
-		bool useRgpProtocol = default(false);
+		
+        bool useRgpProtocol = default(false);
+        int flowCount = default(4);
+
+        object periods = default([]);
+        object phases = default([]);
+        object accumulatedDelays = default([]);
 }
 

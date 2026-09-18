@@ -8,7 +8,6 @@
 using namespace inet;
 
 // INFO: Has to be updated with omnetpp.ini.
-static uint64_t periods[4] = {400000, 500000, 500000, 600000};
 
 std::string getStreamNameFromPacket(inet::Packet *packet) {
 
@@ -54,58 +53,44 @@ Flow getPacketFlow(std::string &streamName) {
   return Flow{pcp, id};
 }
 
-uint64_t pmp_shapingTransaction(PIFOPacket p,
-                                std::vector<uint64_t> &arrival_times,
-                                std::vector<int> &counters) {
 
-  uint64_t now = simtime_to_nsec(simTime());
+uint64_t pmp_shapingTransaction(PIFOPacket p, std::vector<ShapingOptions> &shaping_options) {
+    ShapingOptions opt = shaping_options[p.flow.id];
+    /*
+        Recursive Definition:
+          r_{f,i}^{(0)} = phi_f + i * T_f
+          r_{f,i}^{(h)} = r_{f,i}^{(h-1)} + W_{f,i}^{(h-1)} + D_phy^{(h-1)}   (for h > 0)
 
-  if (p.flow.id >= counters.size()) {
-    // Resize the vectors to accommodate the new flow ID
-    size_t newSize = p.flow.id + 1;
+        Closed-Form Summation:
+          r_{f,i}^{(h)} = phi_f + i * T_f + SUM_{k=0}^{h-1} ( W_{f,i}^{(k)} + D_phy^{(k)} )
+    */
 
-    counters.resize(newSize, 0);
-    arrival_times.resize(newSize, 0);
-  }
+    if (opt.counter == 0) {
+        opt.release_time = opt.phase + opt.accumulated_delays;
+    } else {
+        opt.release_time += opt.period;
+    }
 
-  if (counters[p.flow.id] == 0) {
-    arrival_times[p.flow.id] = now;
-  }
-
-  uint64_t rt =
-      arrival_times[p.flow.id] + (counters[p.flow.id] * periods[p.flow.id]);
-
-  counters[p.flow.id]++;
-
-  return rt;
+    opt.counter++;
+    return opt.release_time;
 }
 
 uint64_t pmp_schedulingTransaction(PIFOPacket p) { return p.flow.pcp; }
 
-uint64_t rgp_shapingTransaction(PIFOPacket p,
-                                std::vector<uint64_t> &arrival_times,
-                                std::vector<int> &counters) {
-
+uint64_t rgp_shapingTransaction(PIFOPacket p, std::vector<ShapingOptions> &shaping_options) {
   uint64_t now = simtime_to_nsec(simTime());
+  ShapingOptions opt = shaping_options[p.flow.id];
 
-  if (p.flow.id >= counters.size()) {
-    // Resize the vectors to accommodate the new flow ID
-    size_t newSize = p.flow.id + 1;
-
-    counters.resize(newSize, 0);
-    arrival_times.resize(newSize, 0);
+  if (opt.counter == 0) {
+    opt.release_time = now;
+  } else {
+      opt.release_time += opt.period;
   }
 
-  if (counters[p.flow.id] == 0) {
-    arrival_times[p.flow.id] = now;
-  }
+  // INFO: This releasetime can be modified when conditionally dequeuing in RGP as well!
 
-  uint64_t rt =
-      arrival_times[p.flow.id] + (counters[p.flow.id] * periods[p.flow.id]);
-
-  counters[p.flow.id]++;
-
-  return rt;
+  opt.counter++;
+  return opt.release_time;
 }
 
 uint64_t rgp_schedulingTransaction(PIFOPacket p) { return p.flow.pcp; }
