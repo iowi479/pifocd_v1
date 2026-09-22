@@ -14,8 +14,16 @@ class ShapingQueue : public SchedulingQueue {
 public:
   using ShapingTransaction = std::function<uint64_t(PIFOPacket, std::vector<ShapingOptions> &)>;
 
+  struct RtCompare {
+    bool operator()(const Entry &a, const Entry &b) const {
+      // INFO: This is not stable. But it doesn't need to.
+      // When there are elements with the same rank, we don't guarantee anything
+      // about the order of the elements.
+      return a.rank > b.rank;
+    }
+  };
 protected:
-  std::priority_queue<Entry, std::vector<Entry>, Compare> sq;
+  std::priority_queue<Entry, std::vector<Entry>, RtCompare> sq;
 
   uint8_t id;
   std::optional<ShapingTransaction> shapingTransaction;

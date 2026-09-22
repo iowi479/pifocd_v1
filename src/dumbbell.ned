@@ -31,36 +31,27 @@ network DumbbellNetwork extends Module
 
     submodules:
         // ---- Sources ----
-        deviceSource1: TsnDevice {
-            @display("p=450,100");
-        }
-        deviceSource2: TsnDevice {
-            @display("p=450,200");
-        }
-        deviceSource3: TsnDevice {
-            @display("p=450,300");
-        }
-        deviceSource4: TsnDevice {
-            @display("p=450,400");
-        }
-
+        deviceSource[6]: TsnDevice {
+			@display("p=450,100,col,100");		
+		}
+		
         // ---- Sinks ----
         deviceSink1: TsnDevice {
-            @display("p=900,250");
+            @display("p=900,350");
         }
 
 		// ---- Switches ----
         switch1: TsnSwitch {
-            @display("p=600,150");
+            @display("p=600,200");
         }
         switch2: TsnSwitch {
-            @display("p=600,350");
+            @display("p=600,500");
         }
         switch3: TsnSwitch {
-            @display("p=700,250");
+            @display("p=700,350");
         }
         switch4: TsnSwitch {
-            @display("p=800,250");
+            @display("p=800,350");
         }
 
 		// ---- misc ----
@@ -76,11 +67,17 @@ network DumbbellNetwork extends Module
 
 	
     connections:
-        deviceSource1.ethg++ <--> EthernetLink <--> switch1.ethg++;
-        deviceSource2.ethg++ <--> EthernetLink <--> switch1.ethg++;
+		// Connect deviceSource[0], [1], [2] to switch1
+    	for i=0..2 {
+        	deviceSource[i].ethg++ <--> EthernetLink <--> switch1.ethg++;
+    	}
 
-        deviceSource3.ethg++ <--> EthernetLink <--> switch2.ethg++;
-        deviceSource4.ethg++ <--> EthernetLink <--> switch2.ethg++;
+    	// Connect deviceSource[3], [4], [5] to switch2
+    	for i=3..5 {
+        	deviceSource[i].ethg++ <--> EthernetLink <--> switch2.ethg++;
+    	}
+    	
+    	
 
         switch1.ethg++ <--> EthernetLink <--> switch3.ethg++;
         switch2.ethg++ <--> EthernetLink <--> switch3.ethg++;

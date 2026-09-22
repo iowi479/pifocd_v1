@@ -55,7 +55,8 @@ Flow getPacketFlow(std::string &streamName) {
 
 
 uint64_t pmp_shapingTransaction(PIFOPacket p, std::vector<ShapingOptions> &shaping_options) {
-    ShapingOptions opt = shaping_options[p.flow.id];
+    ShapingOptions &opt = shaping_options[p.flow.id];
+
     /*
         Recursive Definition:
           r_{f,i}^{(0)} = phi_f + i * T_f
@@ -65,21 +66,20 @@ uint64_t pmp_shapingTransaction(PIFOPacket p, std::vector<ShapingOptions> &shapi
           r_{f,i}^{(h)} = phi_f + i * T_f + SUM_{k=0}^{h-1} ( W_{f,i}^{(k)} + D_phy^{(k)} )
     */
 
-    if (opt.counter == 0) {
-        opt.release_time = opt.phase + opt.accumulated_delays;
-    } else {
-        opt.release_time += opt.period;
-    }
+    uint64_t release_time = opt.phase + opt.accumulated_delays + (opt.counter * opt.period);
+    opt.release_time = release_time;
+
 
     opt.counter++;
-    return opt.release_time;
+    return release_time;
 }
 
 uint64_t pmp_schedulingTransaction(PIFOPacket p) { return p.flow.pcp; }
 
 uint64_t rgp_shapingTransaction(PIFOPacket p, std::vector<ShapingOptions> &shaping_options) {
   uint64_t now = simtime_to_nsec(simTime());
-  ShapingOptions opt = shaping_options[p.flow.id];
+  ShapingOptions &opt = shaping_options[p.flow.id];
+
 
   if (opt.counter == 0) {
     opt.release_time = now;

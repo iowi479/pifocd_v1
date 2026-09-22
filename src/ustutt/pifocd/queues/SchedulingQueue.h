@@ -22,7 +22,7 @@ public:
     uint64_t rank;
   };
 
-  struct Compare {
+  struct PqCompare {
     bool operator()(const Entry &a, const Entry &b) const {
       // INFO: This is not stable. But it doesn't need to.
       // When there are elements with the same rank, we don't guarantee anything
@@ -32,7 +32,7 @@ public:
   };
 
 protected:
-  std::priority_queue<Entry, std::vector<Entry>, Compare> pq;
+  std::priority_queue<Entry, std::vector<Entry>, PqCompare> pq;
 
   bool isLeaf;
   std::vector<SchedulingQueue *> children;
