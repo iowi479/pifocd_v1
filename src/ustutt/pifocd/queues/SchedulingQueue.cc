@@ -1,15 +1,15 @@
 #include "SchedulingQueue.h"
 #include "../SchedulingTree.h"
 
-int SchedulingQueue::size() const { return pq.size(); }
+int SchedulingQueue::size() const { return pcp_pq.size(); }
 
 bool SchedulingQueue::isEmpty() const { return size() == 0; }
 
 void SchedulingQueue::clear() {
-  while (pq.size() > 0) {
-    pq.pop();
+  while (pcp_pq.size() > 0) {
+    pcp_pq.pop();
   }
-};
+}
 
 void SchedulingQueue::push(PIFOPacket packet) {
   Entry entry{};
@@ -28,7 +28,7 @@ void SchedulingQueue::push(PIFOPacket packet) {
 
   EV_INFO << "PIFOCD: SchedulingQueue enqueued 1 ref with rank=" << rank << EV_ENDL;
 
-  pq.push(entry);
+  pcp_pq.push(entry);
 
   // Propagate further if there is still a parent
   if (parent != nullptr) {
@@ -43,14 +43,14 @@ void SchedulingQueue::push(PIFOPacket packet) {
 std::optional<PIFOPacket> SchedulingQueue::pull(bool isRgp) {
   EV_INFO << "PIFOCD: SchedulingQueue pull" << EV_ENDL;
 
-  if (pq.size() <= 0) {
+  if (pcp_pq.size() <= 0) {
       return std::nullopt;
   }
 
-  Entry head = pq.top();
+  Entry head = pcp_pq.top();
 
   // Actually remove the head element.
-  pq.pop();
+  pcp_pq.pop();
 
   if (std::holds_alternative<PIFOPacket>(head.value)) {
     if (!isLeaf)
@@ -61,10 +61,10 @@ std::optional<PIFOPacket> SchedulingQueue::pull(bool isRgp) {
   } else {
     uint8_t ref = std::get<uint8_t>(head.value);
 
-    EV_INFO << "PIFOCD: SchedulingQueue dequeued 1 ref with rank=" << ref << EV_ENDL;
+    EV_INFO << "PIFOCD: SchedulingQueue dequeued 1 ref with rank=" << (int)ref << EV_ENDL;
     // ref always has to point into the children.
     // If this is out-of-bounds, something went wrong.
-    if (this->children.size() < ref)
+    if (this->children.size() <= ref)
       throw cRuntimeError("PIFOCD: SchedulingQueue ref is pointing out of bounds");
 
     // This can go on recursively until it reaches the leaf.
@@ -75,11 +75,11 @@ std::optional<PIFOPacket> SchedulingQueue::pull(bool isRgp) {
 std::optional<PIFOPacket> SchedulingQueue::peek(bool isRgp) const {
   EV_INFO << "PIFOCD: SchedulingQueue peek" << EV_ENDL;
 
-  if (pq.size() <= 0) {
+  if (pcp_pq.size() <= 0) {
       return std::nullopt;
   }
 
-  Entry head = pq.top();
+  Entry head = pcp_pq.top();
 
   if (std::holds_alternative<PIFOPacket>(head.value)) {
     if (!isLeaf)

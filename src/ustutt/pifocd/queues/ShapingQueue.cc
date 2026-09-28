@@ -7,6 +7,24 @@
 
 using namespace omnetpp;
 
+int ShapingQueue::size() const { return rt_pq.size(); }
+
+bool ShapingQueue::isEmpty() const { return size() == 0; }
+
+void ShapingQueue::clear() {
+  while (rt_pq.size() > 0) {
+    rt_pq.pop();
+  }
+
+  while (rt_sq.size() > 0) {
+      rt_sq.pop();
+  }
+
+  // Notify the scheduling tree that queue state updated
+    this->updated();
+}
+
+
 void ShapingQueue::push(PIFOPacket packet) {
   Entry sq_entry{};
   Entry pq_entry{};
@@ -24,7 +42,7 @@ void ShapingQueue::push(PIFOPacket packet) {
   sq_entry.value = packet;
   sq_entry.rank = rt;
 
-  pq.push(pq_entry);
+  rt_pq.push(pq_entry);
 
   EV_INFO << "PIFOCD: ShapingQueue(id=" << (int)this->id
           << ") enqueued 1 packet with rt=" << rt << EV_ENDL;
@@ -41,7 +59,7 @@ void ShapingQueue::push(PIFOPacket packet) {
     }
   } else {
     // insert the element into the shaping queue
-    sq.push(sq_entry);
+    rt_sq.push(sq_entry);
 
     EV_INFO << "PIFOCD: ShapingQueue(id=" << (int)this->id
             << ") enqueued 1 shaping-ref with rt=" << rt << EV_ENDL;
@@ -58,17 +76,32 @@ std::optional<PIFOPacket> ShapingQueue::pull(bool isRgp) {
 
     std::optional<PIFOPacket> peeked = this->peek(isRgp);
 
-    if (pq.empty()) {
-        // No packets in this Shaping queue
+    if (rt_pq.empty()) {
+        // No packets in this complete Shaping queue
         return std::nullopt;
-    } else if (sq.size() < pq.size()) {
+    } else if (rt_sq.size() < rt_pq.size()) {
         // This packet is not in sq anymore.
-        pq.pop();
+        rt_pq.pop();
+
         return peeked;
-    } else if (isRgp && sq.size() == pq.size()) {
-        // There is atleast one packet since !pq.empty() and all are waiting for release.
-        pq.pop();
-        sq.pop();
+    } else if (isRgp && rt_pq.size() == rt_sq.size()) {
+        // There is atleast one packet since !rt_pq.empty() and all are waiting for release.
+
+        Entry unreleased_packet_entry = rt_pq.top();
+        Entry unreleased_shaping_entry = rt_sq.top();
+        uint64_t r1 = unreleased_packet_entry.rank;
+        uint64_t r2 = unreleased_shaping_entry.rank;
+
+        PIFOPacket p1 = std::get<PIFOPacket>(unreleased_packet_entry.value);
+        PIFOPacket p2 = std::get<PIFOPacket>(unreleased_shaping_entry.value);
+
+        if (r1 != r2 || p1.packet_id != p2.packet_id) {
+            EV_INFO << "PIFOCD: dequeuing rank:" << r1 << r2<< " packet_id: " << EV_ENDL;
+        }
+
+
+        rt_pq.pop();
+        rt_sq.pop();
 
         // update since the head of sq changed, so we need to update the wake timer as well.
         this->updated();
@@ -82,8 +115,8 @@ std::optional<PIFOPacket> ShapingQueue::pull(bool isRgp) {
         return peeked;
     } else {
         // This should not happen. (Fall back)
-        EV_INFO << "PIFOCD: peeking at queue in weird state: sq.size() = " << sq.size()
-                << ", pq.size() = " << pq.size() << EV_ENDL;
+        EV_INFO << "PIFOCD: peeking at queue in weird state: rt_sq.size() = " << rt_sq.size()
+                << ", rt_pq.size() = " << rt_pq.size() << EV_ENDL;
 
         return std::nullopt;
     }
@@ -95,35 +128,42 @@ std::optional<PIFOPacket> ShapingQueue::peek(bool isRgp) const {
     // 2. There is a released packet
     // 3. There is no released packet yet. (Conditional dequeuing)
 
-    if (pq.empty()) {
-        // No packets in this Shaping queue
+    if (rt_pq.empty()) {
+        // No packets in this complete Shaping queue
         return std::nullopt;
-    } else if (sq.size() < pq.size()) {
+    } else if (rt_sq.size() < rt_pq.size()) {
         // This packet is not in sq anymore.
-        Entry released_packet_entry = pq.top();
+        Entry released_packet_entry = rt_pq.top();
+
+        uint64_t now = simtime_to_nsec(simTime());
+        if (released_packet_entry.rank > now) {
+            throw cRuntimeError("PIFOCD: packet dequeued from haping queue before rank=%lu and now=%lu",
+                    released_packet_entry.rank, now);
+        }
+
         PIFOPacket packet = std::get<PIFOPacket>(released_packet_entry.value);
         return packet;
-    } else if (isRgp && sq.size() == pq.size()) {
-        // There is atleast one packet since !pq.empty() and all are waiting for release.
-        Entry unreleased_packet_entry = pq.top();
+    } else if (isRgp && rt_pq.size() == rt_sq.size()) {
+        // There is atleast one packet since !rt_pq.empty() and all are waiting for release.
+        Entry unreleased_packet_entry = rt_pq.top();
         PIFOPacket packet = std::get<PIFOPacket>(unreleased_packet_entry.value);
         return packet;
     } else {
         // This should not happen. (Fall back)
-        EV_INFO << "PIFOCD: peeking at queue in weird state: sq.size() = " << sq.size()
-                << ", pq.size() = " << pq.size() << EV_ENDL;
+        EV_INFO << "PIFOCD: peeking at queue in weird state: rt_sq.size() = " << rt_sq.size()
+                << ", rt_pq.size() = " << rt_pq.size() << EV_ENDL;
 
         return std::nullopt;
     }
 }
 
 void ShapingQueue::updated() {
-    if (sq.empty()) {
+    if (rt_sq.empty()) {
         // No packets left.
         this->st->updateTimer(id, UINT64_MAX);
     } else {
         // Still packets in the sq.
-        uint64_t rt = sq.top().rank;
+        uint64_t rt = rt_sq.top().rank;
 
         this->st->updateTimer(id, rt);
     }
@@ -141,13 +181,13 @@ void ShapingQueue::wake() {
   EV_INFO << "PIFOCD: ShapingQueue(id=" << (int)this->id << ") got woken @" << now << EV_ENDL;
 
   // Dequeue all packet-refs which timers expired and forward them.
-  while (sq.size() > 0) {
-    head = sq.top();
+  while (rt_sq.size() > 0) {
+    head = rt_sq.top();
     uint64_t rt = head.rank;
 
     if (now >= rt) {
       PIFOPacket packet = std::get<PIFOPacket>(head.value);
-      sq.pop();
+      rt_sq.pop();
 
       if (parent != nullptr) {
         parent->push(packet);

@@ -14,7 +14,7 @@ class ShapingQueue : public SchedulingQueue {
 public:
   using ShapingTransaction = std::function<uint64_t(PIFOPacket, std::vector<ShapingOptions> &)>;
 
-  struct RtCompare {
+  struct LeqCompare {
     bool operator()(const Entry &a, const Entry &b) const {
       // INFO: This is not stable. But it doesn't need to.
       // When there are elements with the same rank, we don't guarantee anything
@@ -23,14 +23,15 @@ public:
     }
   };
 protected:
-  std::priority_queue<Entry, std::vector<Entry>, RtCompare> sq;
+  std::priority_queue<Entry, std::vector<Entry>, LeqCompare> rt_sq;
+  std::priority_queue<Entry, std::vector<Entry>, LeqCompare> rt_pq;
 
   uint8_t id;
   std::optional<ShapingTransaction> shapingTransaction;
 
 public:
   ShapingQueue(bool isLeaf, uint8_t id) : SchedulingQueue(isLeaf), id(id) {
-    this->sq = {};
+    this->rt_pq = {};
     this->shapingTransaction = std::nullopt;
 
     if (!isLeaf)
@@ -40,6 +41,10 @@ public:
   ~ShapingQueue() {};
 
   void setShapingTransaction(ShapingTransaction sptxn) { this->shapingTransaction = sptxn;}
+
+  int size() const;
+  bool isEmpty() const;
+  void clear();
 
   void push(PIFOPacket packet) override;
   std::optional<PIFOPacket> pull(bool isRgp) override;

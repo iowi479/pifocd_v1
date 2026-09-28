@@ -111,7 +111,7 @@ void SchedulingTree::pushPacket(Packet *packet, const cGate *gate) {
   PIFOPacket p{packet_id, streamName, getPacketFlow(streamName)};
 
   EV_INFO << "PIFOCD: Pushing packet (pcp=" << p.flow.pcp
-          << ") of stream: " << p.streamName << EV_ENDL;
+          << ", flow=" << p.flow.id << "), of stream: " << p.streamName << EV_ENDL;
 
   this->leafs[p.flow.pcp].push(p);
 
@@ -139,6 +139,7 @@ Packet *SchedulingTree::pullPacket(const cGate *gate) {
       int pcp_counter = this->leafs.size() - 1;
       while (pcp_counter >= 0 && !opt.has_value()) {
           opt = this->leafs[pcp_counter].pull(true);
+          pcp_counter -= 1;
       }
   }
 
@@ -176,6 +177,7 @@ Packet *SchedulingTree::canPullPacket(const cGate *gate) const {
       int pcp_counter = this->leafs.size() - 1;
       while (pcp_counter >= 0 && !opt.has_value()) {
           opt = this->leafs[pcp_counter].peek(true);
+          pcp_counter -= 1;
       }
   }
 
