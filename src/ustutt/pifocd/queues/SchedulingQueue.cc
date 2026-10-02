@@ -23,7 +23,7 @@ void SchedulingQueue::push(PIFOPacket packet) {
 
   // Either add packet or the rank which will point us to the ShapingQueue for
   // pcp=rank. The rank is the same as the ref to a ShapingQueue.
-  entry.value = isLeaf ? V{packet} : V{(uint8_t)rank};
+  entry.value = isLeaf ? V{packet} : V{(uint8_t) (7-rank)};
   entry.rank = rank;
 
   EV_INFO << "PIFOCD: SchedulingQueue enqueued 1 ref with rank=" << rank << EV_ENDL;

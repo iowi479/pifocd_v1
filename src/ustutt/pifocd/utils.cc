@@ -74,7 +74,7 @@ uint64_t pmp_shapingTransaction(PIFOPacket p, std::vector<ShapingOptions> &shapi
     return release_time;
 }
 
-uint64_t pmp_schedulingTransaction(PIFOPacket p) { return p.flow.pcp; }
+uint64_t pmp_schedulingTransaction(PIFOPacket p) { return 7 - p.flow.pcp; }
 
 uint64_t rgp_shapingTransaction(PIFOPacket p, std::vector<ShapingOptions> &shaping_options) {
   uint64_t now = simtime_to_nsec(simTime());
@@ -93,7 +93,7 @@ uint64_t rgp_shapingTransaction(PIFOPacket p, std::vector<ShapingOptions> &shapi
   return opt.release_time;
 }
 
-uint64_t rgp_schedulingTransaction(PIFOPacket p) { return p.flow.pcp; }
+uint64_t rgp_schedulingTransaction(PIFOPacket p) { return 7 - p.flow.pcp; }
 
 uint64_t simtime_to_nsec(inet::simtime_t t) {
   return (uint64_t)(SIMTIME_DBL(t) * 1e9 + 0.5);

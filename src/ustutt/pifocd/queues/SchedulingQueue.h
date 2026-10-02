@@ -22,17 +22,17 @@ public:
     uint64_t rank;
   };
 
-  struct GeqCompare {
+  struct Compare {
     bool operator()(const Entry &a, const Entry &b) const {
       // INFO: This is not stable. But it doesn't need to.
       // When there are elements with the same rank, we don't guarantee anything
       // about the order of the elements.
-      return a.rank < b.rank;
+      return a.rank > b.rank;
     }
   };
 
 protected:
-  std::priority_queue<Entry, std::vector<Entry>, GeqCompare> pcp_pq;
+  std::priority_queue<Entry, std::vector<Entry>, Compare> pcp_pq;
 
   bool isLeaf;
   std::vector<SchedulingQueue *> children;
